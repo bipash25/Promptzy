@@ -21,7 +21,7 @@ Before you begin, make sure you have:
 
 ### Step 1: Get the Code
 ```bash
-git clone https://github.com/yourusername/promptzy.git
+git clone https://github.com/bipash25/Promptzy.git
 cd promptzy
 ```
 

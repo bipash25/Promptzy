@@ -14,3 +14,6 @@ yarn-error.log*
 pnpm-debug.log*
 */dist/
 */build/
+*/package-lock.json
+*/yarn.lock
+package-lock.json

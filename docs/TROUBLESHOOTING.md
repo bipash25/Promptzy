@@ -409,7 +409,7 @@ If you're still stuck after trying these solutions:
    - Environment (OS, Node version, etc.)
 
 3. **Contact:**
-   - GitHub Issues: [github.com/yourusername/promptzy/issues](https://github.com/yourusername/promptzy/issues)
+   - GitHub Issues: [github.com/bipash25/promptzy/issues](https://github.com/bipash25/promptzy/issues)
    - Email: support@promptzy.com
    - Discord: [Join community](https://discord.gg/promptzy)
 

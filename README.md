@@ -96,7 +96,7 @@ Promptzy/
 
 ### **1. Clone Repository:**
 ```bash
-git clone https://github.com/yourusername/promptzy.git
+git clone https://github.com/bipash25/Promptzy.git
 cd promptzy
 ```
 
@@ -234,7 +234,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🌟 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/promptzy&type=Date)](https://star-history.com/#yourusername/promptzy&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=bipash25/promptzy&type=Date)](https://star-history.com/#bipash25/promptzy&Date)
 
 ---
 
