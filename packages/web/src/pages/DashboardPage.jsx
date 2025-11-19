@@ -133,17 +133,33 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Mobile Sidebar Overlay */}
+      {showSidebar && (
+        <div
+          className="fixed inset-0 bg-black/50 z-20 md:hidden"
+          onClick={toggleSidebar}
+        />
+      )}
+
       {/* Sidebar */}
       <div
         className={`${
-          showSidebar ? 'w-64' : 'w-0'
-        } transition-all duration-300 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col`}
+          showSidebar ? 'translate-x-0 w-64' : '-translate-x-full w-64 md:w-0 md:translate-x-0'
+        } fixed md:relative z-30 h-full transition-all duration-300 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col`}
       >
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-            Promptzy
-          </h1>
-          <p className="text-xs text-gray-500 mt-1">{user?.email}</p>
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+              Promptzy
+            </h1>
+            <p className="text-xs text-gray-500 mt-1">{user?.email}</p>
+          </div>
+          <button
+            onClick={toggleSidebar}
+            className="md:hidden p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <div className="p-3">
@@ -276,10 +292,10 @@ export default function DashboardPage() {
 
             <button
               onClick={openNewPromptModal}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition"
+              className="flex items-center gap-2 px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition"
             >
               <Plus size={18} />
-              <span className="text-sm">New Prompt</span>
+              <span className="text-sm hidden sm:inline">New Prompt</span>
             </button>
           </div>
         </div>
@@ -307,12 +323,12 @@ export default function DashboardPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredPrompts.map((prompt) => (
                   <div
                     key={prompt.id}
                     onClick={() => navigate(`/editor/${prompt.id}`)}
-                    className="card hover:shadow-lg transition cursor-pointer"
+                    className="card hover:shadow-lg transition cursor-pointer flex flex-col h-full"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">

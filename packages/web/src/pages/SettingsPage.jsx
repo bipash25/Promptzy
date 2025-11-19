@@ -150,15 +150,16 @@ export default function SettingsPage() {
             <button
               onClick={handleSave}
               disabled={!hasChanges || saving}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
-              <Save size={18} className="inline mr-2" />
-              {saving ? 'Saving...' : 'Save Changes'}
+              <Save size={18} className="mr-2" />
+              <span className="hidden sm:inline">{saving ? 'Saving...' : 'Save Changes'}</span>
+              <span className="sm:hidden">{saving ? '...' : 'Save'}</span>
             </button>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Account Section */}
           <div className="card">
             <div className="flex items-center gap-2 mb-4">

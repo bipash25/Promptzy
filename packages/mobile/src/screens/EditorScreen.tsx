@@ -1,4 +1,3 @@
-// packages/mobile/src/screens/EditorScreen.tsx
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -8,6 +7,9 @@ import {
   StyleSheet,
   ScrollView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
 } from 'react-native';
 import { promptService, markdownUtils } from '@promptzy/shared';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -98,73 +100,116 @@ export default function EditorScreen({ route, navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Editor</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={handleShare} style={styles.iconButton}>
-            <Icon name="share-outline" size={24} color="#000" />
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.container}
+      >
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Icon name="arrow-back" size={24} color="#1f2937" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Editor</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity onPress={handleShare} style={styles.iconButton}>
+              <Icon name="share-outline" size={24} color="#1f2937" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSave}
+              disabled={!hasChanges}
+              style={[styles.iconButton, !hasChanges && styles.iconButtonDisabled]}
+            >
+              <Icon name="save-outline" size={24} color={hasChanges ? '#3b82f6' : '#9ca3af'} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.toolbar}>
           <TouchableOpacity
-            onPress={handleSave}
-            disabled={!hasChanges}
-            style={[styles.iconButton, !hasChanges && styles.iconButtonDisabled]}
+            onPress={() => setShowPreview(!showPreview)}
+            style={styles.toolbarButton}
           >
-            <Icon name="save-outline" size={24} color={hasChanges ? '#3b82f6' : '#ccc'} />
+            <Icon name={showPreview ? 'create-outline' : 'eye-outline'} size={20} color="#4b5563" />
+            <Text style={styles.toolbarText}>
+              {showPreview ? 'Edit' : 'Preview'}
+            </Text>
+          </TouchableOpacity>
+          <View style={styles.stats}>
+            <Text style={styles.statsText}>
+              {stats.words || 0}w • {stats.characters || 0}c
+            </Text>
+          </View>
+          <TouchableOpacity onPress={handleDelete} style={styles.toolbarButton}>
+            <Icon name="trash-outline" size={20} color="#ef4444" />
           </TouchableOpacity>
         </View>
-      </View>
 
-      <View style={styles.toolbar}>
-        <TouchableOpacity
-          onPress={() => setShowPreview(!showPreview)}
-          style={styles.toolbarButton}
-        >
-          <Icon name={showPreview ? 'code-outline' : 'eye-outline'} size={20} />
-          <Text style={styles.toolbarText}>
-            {showPreview ? 'Edit' : 'Preview'}
-          </Text>
-        </TouchableOpacity>
-        <View style={styles.stats}>
-          <Text style={styles.statsText}>
-            {stats.words || 0}w • {stats.characters || 0}c • {stats.tokens || 0}t
-          </Text>
-        </View>
-        <TouchableOpacity onPress={handleDelete} style={styles.toolbarButton}>
-          <Icon name="trash-outline" size={20} color="#ef4444" />
-        </TouchableOpacity>
-      </View>
-
-      <TextInput
-        style={styles.titleInput}
-        placeholder="Prompt title"
-        value={title}
-        onChangeText={setTitle}
-      />
-
-      <ScrollView style={styles.content}>
-        {showPreview ? (
-          <Markdown>{content || '*No content yet*'}</Markdown>
-        ) : (
+        <View style={styles.editorContainer}>
           <TextInput
-            style={styles.contentInput}
-            placeholder="Write your prompt in markdown..."
-            value={content}
-            onChangeText={setContent}
-            multiline
-            textAlignVertical="top"
+            style={styles.titleInput}
+            placeholder="Prompt title"
+            placeholderTextColor="#9ca3af"
+            value={title}
+            onChangeText={setTitle}
           />
-        )}
-      </ScrollView>
-    </View>
+
+          <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+            {showPreview ? (
+              <View style={styles.previewContainer}>
+                <Markdown style={markdownStyles}>{content || '*No content yet*'}</Markdown>
+              </View>
+            ) : (
+              <TextInput
+                style={styles.contentInput}
+                placeholder="Write your prompt in markdown..."
+                placeholderTextColor="#9ca3af"
+                value={content}
+                onChangeText={setContent}
+                multiline
+                textAlignVertical="top"
+              />
+            )}
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
-// Shared styles for mobile screens
+const markdownStyles = {
+  body: {
+    color: '#1f2937',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  heading1: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 10,
+    marginTop: 20,
+  },
+  heading2: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#111827',
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  code_block: {
+    backgroundColor: '#f3f4f6',
+    padding: 10,
+    borderRadius: 8,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: 14,
+  },
+};
+
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f9fafb',
@@ -176,15 +221,24 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#f3f4f6',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+  },
+  backButton: {
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 16,
   },
   iconButton: {
     padding: 4,
@@ -192,87 +246,26 @@ const styles = StyleSheet.create({
   iconButtonDisabled: {
     opacity: 0.5,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    margin: 16,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-  },
-  promptCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginBottom: 12,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  promptHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  promptTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  promptContent: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
-  },
-  promptFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  promptMeta: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 64,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#6b7280',
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#9ca3af',
-    marginTop: 8,
-  },
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#f3f4f6',
   },
   toolbarButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    padding: 4,
   },
   toolbarText: {
     fontSize: 14,
+    fontWeight: '500',
+    color: '#4b5563',
   },
   stats: {
     flex: 1,
@@ -280,67 +273,37 @@ const styles = StyleSheet.create({
   },
   statsText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#9ca3af',
+    fontWeight: '500',
+  },
+  editorContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
   titleInput: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#111827',
     padding: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#f3f4f6',
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
     padding: 16,
+    paddingBottom: 32,
   },
   contentInput: {
     fontSize: 16,
     lineHeight: 24,
-    fontFamily: 'monospace',
+    color: '#374151',
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    minHeight: 200,
   },
-  logo: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 32,
-  },
-  form: {
-    width: '100%',
-  },
-  input: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#3b82f6',
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  link: {
-    color: '#3b82f6',
-    textAlign: 'center',
-    fontSize: 14,
+  previewContainer: {
+    flex: 1,
   },
 });

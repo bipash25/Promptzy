@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Tag,
   X,
+  MoreVertical,
 } from 'lucide-react';
 import PromptChainEditor from '../components/PromptChainEditor';
 import VersionHistory from '../components/VersionHistory';
@@ -40,6 +41,7 @@ export default function EditorPage() {
   const [showChainEditor, setShowChainEditor] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [tagInput, setTagInput] = useState('');
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     loadPrompt();
@@ -169,44 +171,47 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Editor */}
-      <div className={`${showPreview ? 'w-1/2' : 'w-full'} border-r border-gray-200 dark:border-gray-700 flex flex-col`}>
-        {/* Toolbar */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/')}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-            >
-              <ArrowLeft size={20} />
-            </button>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="text-lg font-semibold bg-transparent border-0 focus:outline-none focus:border-b-2 focus:border-blue-500"
-              placeholder="Prompt title"
-            />
-            {hasChanges && (
-              <span className="text-xs text-orange-500 flex items-center gap-1">
-                <AlertCircle size={14} />
-                Unsaved
-              </span>
-            )}
-          </div>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 flex-col">
+      {/* Toolbar - Always visible at top */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <button
+            onClick={() => navigate('/')}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg shrink-0"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="text-lg font-semibold bg-transparent border-0 focus:outline-none focus:border-b-2 focus:border-blue-500 min-w-0 flex-1"
+            placeholder="Prompt title"
+          />
+          {hasChanges && (
+            <span className="text-xs text-orange-500 flex items-center gap-1 shrink-0 hidden sm:flex">
+              <AlertCircle size={14} />
+              Unsaved
+            </span>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-1 sm:gap-2 ml-2">
+          <button
+            onClick={handleSave}
+            disabled={!hasChanges || saving}
+            className="p-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition"
+            title="Save"
+          >
+            <Save size={18} />
+          </button>
           
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSave}
-              disabled={!hasChanges || saving}
-              className="p-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition"
-            >
-              <Save size={18} />
-            </button>
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-2">
             <button
               onClick={handleCopy}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative"
+              title="Copy"
             >
               <Copy size={18} />
               {copySuccess && (
@@ -218,6 +223,7 @@ export default function EditorPage() {
             <button
               onClick={handleToggleFavorite}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              title="Favorite"
             >
               <Star size={18} className={prompt?.favorite ? 'fill-yellow-400 text-yellow-400' : ''} />
             </button>
@@ -257,17 +263,128 @@ export default function EditorPage() {
             >
               <Trash2 size={18} />
             </button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden relative">
             <button
-              onClick={() => setShowPreview(!showPreview)}
+              onClick={() => setShowMobileMenu(!showMobileMenu)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
             >
-              {showPreview ? <Code size={18} /> : <Eye size={18} />}
+              <MoreVertical size={18} />
             </button>
+            
+            {showMobileMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowMobileMenu(false)}
+                />
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 py-1">
+                  <button
+                    onClick={() => {
+                      handleCopy();
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Copy size={16} />
+                    Copy Content
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleToggleFavorite();
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <Star size={16} className={prompt?.favorite ? 'fill-yellow-400 text-yellow-400' : ''} />
+                    {prompt?.favorite ? 'Unfavorite' : 'Favorite'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowChainEditor(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <LinkIcon size={16} />
+                    Prompt Chaining
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowVersionHistory(true);
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <History size={16} />
+                    Version History
+                  </button>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                  <div className="px-4 py-1 text-xs text-gray-500 font-medium">Export</div>
+                  <button
+                    onClick={() => {
+                      handleExport('json');
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <FileDown size={16} />
+                    JSON
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleExport('md');
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <FileDown size={16} />
+                    Markdown
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleExport('txt');
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <FileDown size={16} />
+                    Text
+                  </button>
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                  <button
+                    onClick={() => {
+                      handleDelete();
+                      setShowMobileMenu(false);
+                    }}
+                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 size={16} />
+                    Delete Prompt
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        </div>
 
-        {/* Stats Bar */}
-        <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-4 border-b border-gray-200 dark:border-gray-700">
+          <button
+            onClick={() => setShowPreview(!showPreview)}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+            title={showPreview ? "Edit" : "Preview"}
+          >
+            {showPreview ? <Code size={18} /> : <Eye size={18} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Editor Column */}
+        <div className={`${showPreview ? 'hidden md:flex md:w-1/2' : 'w-full'} border-r border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50 dark:bg-gray-900`}>
+          {/* Stats Bar */}
+          <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto whitespace-nowrap">
           <span>{stats.words || 0} words</span>
           <span>•</span>
           <span>{stats.characters || 0} characters</span>
@@ -285,10 +402,10 @@ export default function EditorPage() {
           )}
         </div>
 
-        {/* Editor Area */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Tags Section */}
-          <div className="mb-4">
+          {/* Editor Area */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+            {/* Tags Section */}
+            <div className="mb-4">
             <div className="flex items-center gap-2 mb-2">
               <Tag size={16} className="text-gray-400" />
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Tags</span>
@@ -327,60 +444,61 @@ export default function EditorPage() {
             </div>
           </div>
           
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="w-full h-full bg-transparent border-0 focus:outline-none resize-none font-mono text-sm"
-            placeholder="Write your prompt in markdown...
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="w-full h-full bg-transparent border-0 focus:outline-none resize-none font-mono text-sm"
+              placeholder="Write your prompt in markdown...
 
 Use **bold**, *italic*, `code`, and more!
 
 Template variables: {{variable_name}}"
-          />
-        </div>
-      </div>
-
-      {/* Preview */}
-      {showPreview && (
-        <div className="w-1/2 bg-white dark:bg-gray-800 overflow-y-auto p-6">
-          <div className="max-w-3xl mx-auto">
-            <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-base prose-li:text-base prose-code:text-sm prose-code:bg-gray-100 prose-code:dark:bg-gray-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-100 prose-pre:dark:bg-gray-800">
-              <ReactMarkdown 
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  code({node, inline, className, children, ...props}) {
-                    return inline ? (
-                      <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
-                        {children}
-                      </code>
-                    ) : (
-                      <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
-                        <code className="text-sm font-mono" {...props}>
-                          {children}
-                        </code>
-                      </pre>
-                    );
-                  },
-                  h1: ({children}) => <h1 className="text-3xl font-bold mt-6 mb-4">{children}</h1>,
-                  h2: ({children}) => <h2 className="text-2xl font-bold mt-5 mb-3">{children}</h2>,
-                  h3: ({children}) => <h3 className="text-xl font-bold mt-4 mb-2">{children}</h3>,
-                  ul: ({children}) => <ul className="list-disc pl-6 my-4 space-y-2">{children}</ul>,
-                  ol: ({children}) => <ol className="list-decimal pl-6 my-4 space-y-2">{children}</ol>,
-                  li: ({children}) => <li className="text-base">{children}</li>,
-                  p: ({children}) => <p className="text-base my-3">{children}</p>,
-                  blockquote: ({children}) => (
-                    <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-700 dark:text-gray-300">
-                      {children}
-                    </blockquote>
-                  ),
-                }}
-              >
-                {content || '*Preview will appear here...*'}
-              </ReactMarkdown>
-            </div>
+            />
           </div>
         </div>
-      )}
+
+        {/* Preview Column */}
+        {showPreview && (
+          <div className={`w-full md:w-1/2 bg-white dark:bg-gray-800 overflow-y-auto p-4 sm:p-6 ${showPreview ? 'block' : 'hidden'}`}>
+            <div className="max-w-3xl mx-auto">
+              <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-base prose-li:text-base prose-code:text-sm prose-code:bg-gray-100 prose-code:dark:bg-gray-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-100 prose-pre:dark:bg-gray-800">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    code({node, inline, className, children, ...props}) {
+                      return inline ? (
+                        <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+                          {children}
+                        </code>
+                      ) : (
+                        <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
+                          <code className="text-sm font-mono" {...props}>
+                            {children}
+                          </code>
+                        </pre>
+                      );
+                    },
+                    h1: ({children}) => <h1 className="text-3xl font-bold mt-6 mb-4">{children}</h1>,
+                    h2: ({children}) => <h2 className="text-2xl font-bold mt-5 mb-3">{children}</h2>,
+                    h3: ({children}) => <h3 className="text-xl font-bold mt-4 mb-2">{children}</h3>,
+                    ul: ({children}) => <ul className="list-disc pl-6 my-4 space-y-2">{children}</ul>,
+                    ol: ({children}) => <ol className="list-decimal pl-6 my-4 space-y-2">{children}</ol>,
+                    li: ({children}) => <li className="text-base">{children}</li>,
+                    p: ({children}) => <p className="text-base my-3">{children}</p>,
+                    blockquote: ({children}) => (
+                      <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-700 dark:text-gray-300">
+                        {children}
+                      </blockquote>
+                    ),
+                  }}
+                >
+                  {content || '*Preview will appear here...*'}
+                </ReactMarkdown>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       
       {/* Modals */}
       {showChainEditor && (
