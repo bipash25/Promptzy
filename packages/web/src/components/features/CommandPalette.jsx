@@ -25,6 +25,9 @@ export default function CommandPalette() {
                 e.preventDefault();
                 setOpen((open) => !open);
             }
+            if (e.key === 'Escape') {
+                setOpen(false);
+            }
         };
 
         document.addEventListener('keydown', down);
@@ -69,9 +72,17 @@ export default function CommandPalette() {
                         </Command.Item>
                         <Command.Item
                             className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-                            onSelect={() => runCommand(() => {
+                            onSelect={async () => runCommand(async () => {
                                 const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
                                 document.documentElement.classList.toggle('dark', newTheme === 'dark');
+
+                                // Save to backend
+                                try {
+                                    const { settingsService } = await import('@promptzy/shared');
+                                    await settingsService.update({ theme: newTheme });
+                                } catch (error) {
+                                    console.error('Failed to save theme:', error);
+                                }
                             })}
                         >
                             <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

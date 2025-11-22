@@ -31,9 +31,37 @@ export default function DashboardPage() {
   const [filterFavorites, setFilterFavorites] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
+  const handleToggleFavorite = async (promptId) => {
+    try {
+      const prompt = prompts.find(p => p.id === promptId);
+      if (!prompt) return;
+
+      // Optimistic update
+      const updatedPrompts = prompts.map(p =>
+        p.id === promptId ? { ...p, favorite: !p.favorite } : p
+      );
+      // Update local state immediately for better UX
+      useStore.setState({ prompts: updatedPrompts });
+
+      // Update in backend
+      await promptService.update(promptId, { favorite: !prompt.favorite });
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      // Revert on error
+      loadPrompts({ projectId: selectedProject });
+    }
+  };
+
   useEffect(() => {
-    loadProjects();
-    loadPrompts({ projectId: selectedProject });
+    const loadData = async () => {
+      try {
+        await loadProjects();
+        await loadPrompts({ projectId: selectedProject });
+      } catch (error) {
+        console.error('Failed to load data:', error);
+      }
+    };
+    loadData();
   }, [selectedProject]);
 
   const filteredPrompts = prompts.filter((p) => {
@@ -133,7 +161,7 @@ export default function DashboardPage() {
               <PromptCard
                 key={prompt.id}
                 prompt={prompt}
-                onClick={() => navigate(`/editor/${prompt.id}`)}
+                onToggleFavorite={handleToggleFavorite}
               />
             ))}
           </div>

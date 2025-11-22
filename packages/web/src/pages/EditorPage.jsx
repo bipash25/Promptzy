@@ -60,10 +60,14 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (prompt) {
+      // Proper array comparison for tags
+      const tagsChanged = tags.length !== (prompt.tags?.length || 0) ||
+        tags.some((tag, i) => tag !== prompt.tags?.[i]);
+
       setHasChanges(
         title !== prompt.title ||
         content !== prompt.content ||
-        JSON.stringify(tags) !== JSON.stringify(prompt.tags)
+        tagsChanged
       );
     }
   }, [title, content, tags, prompt]);
@@ -77,12 +81,19 @@ export default function EditorPage() {
       setTags(data.tags || []);
     } catch (error) {
       console.error('Failed to load prompt:', error);
+      // Navigate back on error
+      navigate('/');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSave = async () => {
+    if (!title.trim()) {
+      // Prevent saving empty titles
+      return;
+    }
+
     setSaving(true);
     try {
       if (id === 'new') {
@@ -95,7 +106,7 @@ export default function EditorPage() {
       setHasChanges(false);
     } catch (error) {
       console.error('Failed to save:', error);
-      alert('Failed to save prompt');
+      alert('Failed to save prompt. Please try again.');
     } finally {
       setSaving(false);
     }

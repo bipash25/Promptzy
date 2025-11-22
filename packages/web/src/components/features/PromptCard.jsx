@@ -7,13 +7,20 @@ import { Card, CardContent, CardFooter, CardHeader } from '../ui/Card';
 import { cn } from '../../lib/utils';
 import { motion } from 'framer-motion';
 
-export default function PromptCard({ prompt, onToggleFavorite }) {
+function PromptCard({ prompt, onToggleFavorite }) {
     const navigate = useNavigate();
 
     const handleCopy = (e) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(prompt.content);
-        // Could add a toast notification here
+        navigator.clipboard.writeText(prompt.content).catch(() => {
+            // Fallback for non-HTTPS or unsupported browsers
+            const textarea = document.createElement('textarea');
+            textarea.value = prompt.content;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        });
     };
 
     return (
@@ -39,14 +46,14 @@ export default function PromptCard({ prompt, onToggleFavorite }) {
                             size="icon"
                             className={cn(
                                 "h-8 w-8 -mt-1 -mr-2 transition-colors",
-                                prompt.is_favorite ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500 opacity-0 group-hover:opacity-100"
+                                prompt.favorite ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500 opacity-0 group-hover:opacity-100"
                             )}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                onToggleFavorite(prompt.id);
+                                onToggleFavorite?.(prompt.id);
                             }}
                         >
-                            <Star size={18} fill={prompt.is_favorite ? "currentColor" : "none"} />
+                            <Star size={18} fill={prompt.favorite ? "currentColor" : "none"} />
                         </Button>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
@@ -92,3 +99,5 @@ export default function PromptCard({ prompt, onToggleFavorite }) {
         </motion.div>
     );
 }
+
+export default React.memo(PromptCard);

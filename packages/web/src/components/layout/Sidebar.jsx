@@ -22,7 +22,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Sidebar({ onClose }) {
     const navigate = useNavigate();
-    const { user, projects, settings, signOut } = useStore();
+    const { user, projects, settings, signOut, selectProject } = useStore();
     const [isDark, setIsDark] = React.useState(document.documentElement.classList.contains('dark'));
 
     const handleSignOut = async () => {
@@ -102,7 +102,17 @@ export default function Sidebar({ onClose }) {
             <div className="flex-1 overflow-y-auto px-4 py-2 space-y-6 custom-scrollbar">
                 {/* Main Links */}
                 <div className="space-y-1">
-                    <NavItem to="/" icon={LayoutDashboard} label="All Prompts" end />
+                    <button
+                        onClick={() => {
+                            selectProject(null);
+                            navigate('/');
+                            onClose?.();
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-300 group text-left"
+                    >
+                        <LayoutDashboard size={18} className="group-hover:scale-110 transition-transform" />
+                        <span>All Prompts</span>
+                    </button>
                     <button
                         onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }))}
                         className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-300 group text-left"
@@ -122,12 +132,18 @@ export default function Sidebar({ onClose }) {
                         </Button>
                     </div>
                     {projects.map(project => (
-                        <NavItem
+                        <button
                             key={project.id}
-                            to={`/project/${project.id}`}
-                            icon={Folder}
-                            label={project.name}
-                        />
+                            onClick={() => {
+                                selectProject(project.id);
+                                navigate('/');
+                                onClose?.();
+                            }}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-white/5 transition-all duration-300 group text-left"
+                        >
+                            <Folder size={18} className="group-hover:scale-110 transition-transform" style={{ color: project.color }} />
+                            <span>{project.name}</span>
+                        </button>
                     ))}
                     {projects.length === 0 && (
                         <div className="px-3 py-2 text-sm text-muted-foreground italic opacity-50">
