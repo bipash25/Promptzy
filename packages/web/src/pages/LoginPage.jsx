@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '@promptzy/shared';
-import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react';
+import { LogIn, Mail, Lock, AlertCircle, Sparkles } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { motion } from 'framer-motion';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -26,88 +29,98 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-2">
-            Promptzy
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-background">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 w-full h-full">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-500/20 blur-[100px] animate-float" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/20 blur-[100px] animate-float" style={{ animationDelay: '-2s' }} />
+        <div className="absolute top-[20%] right-[20%] w-[20%] h-[20%] rounded-full bg-pink-500/20 blur-[80px] animate-float" style={{ animationDelay: '-4s' }} />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md relative z-10 p-6"
+      >
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 mb-6 shadow-lg shadow-primary/30"
+          >
+            <Sparkles className="text-white w-8 h-8" />
+          </motion.div>
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-pink-500 mb-2 font-heading tracking-tight">
+            Welcome Back
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Organize your prompts, everywhere</p>
+          <p className="text-muted-foreground text-lg">Enter your portal to creativity</p>
         </div>
 
-        {/* Login Form */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8">
-          <div className="flex items-center gap-2 mb-6">
-            <LogIn className="text-blue-500" size={24} />
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Welcome Back</h2>
-          </div>
-
+        <div className="glass-card rounded-3xl p-8 backdrop-blur-xl border-white/10 dark:border-white/5 shadow-2xl">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
-              <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3 text-destructive text-sm"
+            >
+              <AlertCircle className="shrink-0 mt-0.5" size={16} />
+              <p>{error}</p>
+            </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium ml-1">Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input pl-10"
-                  placeholder="you@example.com"
+                  className="pl-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
+                  placeholder="name@example.com"
                   required
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
+            <div className="space-y-2">
+              <label className="text-sm font-medium ml-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <Input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input pl-10"
+                  className="pl-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
                   placeholder="••••••••"
                   required
                 />
               </div>
             </div>
 
-            <button
+            <Button
               type="submit"
+              className="w-full h-12 rounded-xl text-lg font-medium shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300"
               disabled={loading}
-              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              size="lg"
             >
               {loading ? 'Signing in...' : 'Sign In'}
-            </button>
+            </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm">
-            <p className="text-gray-600 dark:text-gray-400">
+          <div className="mt-8 text-center">
+            <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <Link to="/signup" className="text-blue-500 hover:text-blue-600 font-medium">
-                Sign up
+              <Link to="/signup" className="text-primary hover:text-primary/80 font-semibold hover:underline transition-all">
+                Create account
               </Link>
             </p>
           </div>
         </div>
-
-        <p className="text-center text-xs text-gray-500 dark:text-gray-500 mt-8">
-          Your prompts are securely stored and synced across all your devices
-        </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

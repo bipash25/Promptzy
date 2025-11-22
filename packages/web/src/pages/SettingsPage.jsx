@@ -1,22 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { settingsService, authService } from '@promptzy/shared';
+import { settingsService } from '@promptzy/shared';
 import { useStore } from '../store/useStore';
 import {
-  ArrowLeft,
   Moon,
   Sun,
-  Type,
   Layout,
   Download,
   Upload,
-  Shield,
   Trash2,
   Save,
   User,
   Mail,
-  Lock,
+  Shield,
+  Monitor
 } from 'lucide-react';
+import MainLayout from '../layouts/MainLayout';
+import { Button } from '../components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -68,7 +70,7 @@ export default function SettingsPage() {
       });
       await loadSettings();
       setHasChanges(false);
-      
+
       // Apply theme
       document.documentElement.classList.toggle('dark', theme === 'dark');
     } catch (error) {
@@ -102,7 +104,7 @@ export default function SettingsPage() {
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      
+
       if (confirm('This will import all data from the backup. Existing data may be overwritten. Continue?')) {
         await settingsService.importData(data);
         alert('Data imported successfully');
@@ -118,9 +120,7 @@ export default function SettingsPage() {
     if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
       if (confirm('This will permanently delete all your prompts and projects. Are you absolutely sure?')) {
         try {
-          // Delete all user data first
-          await settingsService.exportAllData(); // Optional: auto-backup before delete
-          
+          await settingsService.exportAllData();
           alert('Account deletion initiated. You will be signed out.');
           await signOut();
           navigate('/login');
@@ -133,249 +133,182 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate('/')}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              >
-                <ArrowLeft size={20} />
-              </button>
-              <h1 className="text-2xl font-bold">Settings</h1>
-            </div>
-            <button
-              onClick={handleSave}
-              disabled={!hasChanges || saving}
-              className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-            >
-              <Save size={18} className="mr-2" />
-              <span className="hidden sm:inline">{saving ? 'Saving...' : 'Save Changes'}</span>
-              <span className="sm:hidden">{saving ? '...' : 'Save'}</span>
-            </button>
+    <MainLayout>
+      <div className="max-w-4xl mx-auto p-6 space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+            <p className="text-muted-foreground mt-1">Manage your preferences and account settings.</p>
           </div>
+          <Button
+            onClick={handleSave}
+            disabled={!hasChanges || saving}
+          >
+            {saving ? <span className="animate-pulse">Saving...</span> : <><Save className="mr-2 h-4 w-4" /> Save Changes</>}
+          </Button>
         </div>
 
-        <div className="p-4 sm:p-6 space-y-6">
+        <div className="grid gap-6">
           {/* Account Section */}
-          <div className="card">
-            <div className="flex items-center gap-2 mb-4">
-              <User size={20} className="text-blue-500" />
-              <h2 className="text-xl font-semibold">Account</h2>
-            </div>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Email
-                </label>
-                <div className="flex items-center gap-2">
-                  <Mail size={16} className="text-gray-400" />
-                  <span className="text-gray-600 dark:text-gray-400">{user?.email}</span>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                Account
+              </CardTitle>
+              <CardDescription>Manage your account information.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Email Address</label>
+                <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/50">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{user?.email}</span>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Appearance Section */}
-          <div className="card">
-            <div className="flex items-center gap-2 mb-4">
-              <Layout size={20} className="text-blue-500" />
-              <h2 className="text-xl font-semibold">Appearance</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Theme
-                </label>
-                <div className="flex gap-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layout className="h-5 w-5 text-primary" />
+                Appearance
+              </CardTitle>
+              <CardDescription>Customize how Promptzy looks and feels.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Theme</label>
+                <div className="grid grid-cols-2 gap-4">
                   <button
                     onClick={() => setTheme('light')}
-                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition ${
-                      theme === 'light'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-700'
-                    }`}
+                    className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${theme === 'light'
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-border hover:border-primary/50'
+                      }`}
                   >
                     <Sun size={20} />
-                    <span>Light</span>
+                    <span className="font-medium">Light</span>
                   </button>
                   <button
                     onClick={() => setTheme('dark')}
-                    className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition ${
-                      theme === 'dark'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-700'
-                    }`}
+                    className={`flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all ${theme === 'dark'
+                        ? 'border-primary bg-primary/5 text-primary'
+                        : 'border-border hover:border-primary/50'
+                      }`}
                   >
                     <Moon size={20} />
-                    <span>Dark</span>
+                    <span className="font-medium">Dark</span>
                   </button>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Font Family
-                </label>
-                <select
-                  value={fontFamily}
-                  onChange={(e) => setFontFamily(e.target.value)}
-                  className="input"
-                >
-                  <option value="Inter">Inter</option>
-                  <option value="System">System Default</option>
-                  <option value="JetBrains Mono">JetBrains Mono</option>
-                  <option value="Roboto">Roboto</option>
-                  <option value="Open Sans">Open Sans</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Font Size: {fontSize}px
-                </label>
-                <input
-                  type="range"
-                  min="12"
-                  max="20"
-                  value={fontSize}
-                  onChange={(e) => setFontSize(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Layout Mode
-                </label>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setLayoutMode('compact')}
-                    className={`flex-1 p-3 rounded-lg border-2 transition ${
-                      layoutMode === 'compact'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-700'
-                    }`}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Font Family</label>
+                  <select
+                    value={fontFamily}
+                    onChange={(e) => setFontFamily(e.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
-                    Compact
-                  </button>
-                  <button
-                    onClick={() => setLayoutMode('comfortable')}
-                    className={`flex-1 p-3 rounded-lg border-2 transition ${
-                      layoutMode === 'comfortable'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-700'
-                    }`}
-                  >
-                    Comfortable
-                  </button>
+                    <option value="Inter">Inter</option>
+                    <option value="System">System Default</option>
+                    <option value="JetBrains Mono">JetBrains Mono</option>
+                    <option value="Outfit">Outfit</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Font Size ({fontSize}px)</label>
+                  <input
+                    type="range"
+                    min="12"
+                    max="20"
+                    value={fontSize}
+                    onChange={(e) => setFontSize(parseInt(e.target.value))}
+                    className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Sync & Backup Section */}
-          <div className="card">
-            <div className="flex items-center gap-2 mb-4">
-              <Download size={20} className="text-blue-500" />
-              <h2 className="text-xl font-semibold">Sync & Backup</h2>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Cloud Sync</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Automatically sync across devices
-                  </p>
+          {/* Data Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-primary" />
+                Data & Sync
+              </CardTitle>
+              <CardDescription>Manage your data, backups, and synchronization.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
+                <div className="space-y-0.5">
+                  <div className="font-medium">Cloud Sync</div>
+                  <div className="text-sm text-muted-foreground">Sync your prompts across all devices</div>
                 </div>
                 <button
                   onClick={() => setSyncEnabled(!syncEnabled)}
-                  className={`relative w-12 h-6 rounded-full transition ${
-                    syncEnabled ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${syncEnabled ? 'bg-primary' : 'bg-input'
+                    }`}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                      syncEnabled ? 'translate-x-6' : ''
-                    }`}
+                    className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${syncEnabled ? 'translate-x-6' : 'translate-x-1'
+                      }`}
                   />
                 </button>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">Auto Backup</p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Automatic daily backups
-                  </p>
-                </div>
-                <button
-                  onClick={() => setAutoBackup(!autoBackup)}
-                  className={`relative w-12 h-6 rounded-full transition ${
-                    autoBackup ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                      autoBackup ? 'translate-x-6' : ''
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
-                <button
-                  onClick={handleExportData}
-                  className="w-full flex items-center justify-center gap-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition"
-                >
-                  <Download size={18} />
-                  Export All Data
-                </button>
-                <label className="w-full flex items-center justify-center gap-2 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
-                  <Upload size={18} />
-                  Import Data
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Button variant="outline" className="flex-1" onClick={handleExportData}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Export Data
+                </Button>
+                <div className="flex-1 relative">
+                  <Button variant="outline" className="w-full">
+                    <Upload className="mr-2 h-4 w-4" />
+                    Import Data
+                  </Button>
                   <input
                     type="file"
                     accept=".json"
                     onChange={handleImportData}
-                    className="hidden"
+                    className="absolute inset-0 opacity-0 cursor-pointer"
                   />
-                </label>
+                </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Danger Zone */}
-          <div className="card border-red-200 dark:border-red-800">
-            <div className="flex items-center gap-2 mb-4">
-              <Trash2 size={20} className="text-red-500" />
-              <h2 className="text-xl font-semibold text-red-600 dark:text-red-400">Danger Zone</h2>
-            </div>
-            
-            <div className="space-y-3">
-              <button
-                onClick={handleDeleteAccount}
-                className="w-full p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition font-medium"
-              >
-                Delete Account
-              </button>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                This will permanently delete your account and all associated data. This action cannot be undone.
-              </p>
-            </div>
-          </div>
+          <Card className="border-destructive/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" />
+                Danger Zone
+              </CardTitle>
+              <CardDescription>Irreversible actions for your account.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between p-4 border border-destructive/20 rounded-lg bg-destructive/5">
+                <div className="space-y-0.5">
+                  <div className="font-medium text-destructive">Delete Account</div>
+                  <div className="text-sm text-destructive/80">Permanently delete your account and all data</div>
+                </div>
+                <Button variant="destructive" onClick={handleDeleteAccount}>
+                  Delete Account
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Version Info */}
-          <div className="text-center text-sm text-gray-500 dark:text-gray-500 py-4">
-            Promptzy v1.0.0 • Built with ❤️
-          </div>
+        <div className="text-center text-sm text-muted-foreground py-8">
+          Promptzy v1.0.0 • Built with ❤️
         </div>
       </div>
-    </div>
+    </MainLayout>
   );
 }

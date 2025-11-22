@@ -1,33 +1,34 @@
-// packages/web/src/pages/EditorPage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { promptService, markdownUtils, shareService } from '@promptzy/shared';
+import { promptService, markdownUtils } from '@promptzy/shared';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   ArrowLeft,
   Save,
   Copy,
-  Share2,
   Star,
   Trash2,
   Eye,
   Code,
+  Maximize2,
+  Minimize2,
+  MoreVertical,
+  Share2,
   History,
   Link as LinkIcon,
-  FileDown,
-  AlertCircle,
-  Tag,
-  X,
-  MoreVertical,
+  FileDown
 } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { cn } from '../lib/utils';
 import PromptChainEditor from '../components/PromptChainEditor';
 import VersionHistory from '../components/VersionHistory';
 
 export default function EditorPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const [prompt, setPrompt] = useState(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -35,29 +36,32 @@ export default function EditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
+  const [zenMode, setZenMode] = useState(false);
   const [stats, setStats] = useState({});
-  const [copySuccess, setCopySuccess] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [showChainEditor, setShowChainEditor] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [tagInput, setTagInput] = useState('');
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
-    loadPrompt();
+    if (id === 'new') {
+      setLoading(false);
+      setPrompt({ title: '', content: '', tags: [] });
+    } else {
+      loadPrompt();
+    }
   }, [id]);
 
   useEffect(() => {
     if (content) {
-      const newStats = markdownUtils.getStats(content);
-      setStats(newStats);
+      setStats(markdownUtils.getStats(content));
     }
   }, [content]);
 
   useEffect(() => {
     if (prompt) {
       setHasChanges(
-        title !== prompt.title || 
+        title !== prompt.title ||
         content !== prompt.content ||
         JSON.stringify(tags) !== JSON.stringify(prompt.tags)
       );
@@ -81,73 +85,19 @@ export default function EditorPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await promptService.update(id, { title, content, tags });
+      if (id === 'new') {
+        const created = await promptService.create({ title, content, tags });
+        navigate(`/editor/${created.id}`, { replace: true });
+      } else {
+        await promptService.update(id, { title, content, tags });
+        await loadPrompt();
+      }
       setHasChanges(false);
-      await loadPrompt();
     } catch (error) {
       console.error('Failed to save:', error);
       alert('Failed to save prompt');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(content);
-    setCopySuccess(true);
-    setTimeout(() => setCopySuccess(false), 2000);
-  };
-
-  const handleToggleFavorite = async () => {
-    try {
-      await promptService.toggleFavorite(id, prompt.favorite);
-      await loadPrompt();
-    } catch (error) {
-      console.error('Failed to toggle favorite:', error);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (confirm('Are you sure you want to delete this prompt?')) {
-      try {
-        await promptService.delete(id);
-        navigate('/');
-      } catch (error) {
-        console.error('Failed to delete:', error);
-        alert('Failed to delete prompt');
-      }
-    }
-  };
-
-  const handleExport = async (format) => {
-    try {
-      const { shareService } = await import('@promptzy/shared');
-      let blob;
-      let filename;
-
-      switch (format) {
-        case 'json':
-          blob = shareService.exportAsJSON(prompt);
-          filename = `${prompt.title}.json`;
-          break;
-        case 'md':
-          blob = shareService.exportAsMarkdown(prompt);
-          filename = `${prompt.title}.md`;
-          break;
-        case 'txt':
-          blob = shareService.exportAsText(prompt);
-          filename = `${prompt.title}.txt`;
-          break;
-      }
-
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Export failed:', error);
     }
   };
 
@@ -164,342 +114,132 @@ export default function EditorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 flex-col">
-      {/* Toolbar - Always visible at top */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-3 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <button
-            onClick={() => navigate('/')}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg shrink-0"
-          >
+    <div className={cn("flex flex-col h-screen bg-background transition-all duration-300", zenMode ? "fixed inset-0 z-50" : "")}>
+      {/* Toolbar */}
+      <div className="border-b border-border bg-card/50 backdrop-blur-sm p-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
             <ArrowLeft size={20} />
-          </button>
-          <input
-            type="text"
+          </Button>
+          <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="text-lg font-semibold bg-transparent border-0 focus:outline-none focus:border-b-2 focus:border-blue-500 min-w-0 flex-1"
-            placeholder="Prompt title"
+            className="text-lg font-semibold bg-transparent border-none shadow-none focus-visible:ring-0 px-0 h-auto min-w-0"
+            placeholder="Untitled Prompt"
           />
           {hasChanges && (
-            <span className="text-xs text-orange-500 flex items-center gap-1 shrink-0 hidden sm:flex">
-              <AlertCircle size={14} />
+            <span className="text-xs text-orange-500 font-medium px-2 py-0.5 bg-orange-500/10 rounded-full shrink-0">
               Unsaved
             </span>
           )}
         </div>
-        
-        <div className="flex items-center gap-1 sm:gap-2 ml-2">
-          <button
-            onClick={handleSave}
-            disabled={!hasChanges || saving}
-            className="p-2 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition"
-            title="Save"
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setZenMode(!zenMode)}
+            title={zenMode ? "Exit Zen Mode" : "Zen Mode"}
+            className="hidden sm:flex"
           >
-            <Save size={18} />
-          </button>
-          
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              onClick={handleCopy}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative"
-              title="Copy"
-            >
-              <Copy size={18} />
-              {copySuccess && (
-                <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                  Copied!
-                </span>
-              )}
-            </button>
-            <button
-              onClick={handleToggleFavorite}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              title="Favorite"
-            >
-              <Star size={18} className={prompt?.favorite ? 'fill-yellow-400 text-yellow-400' : ''} />
-            </button>
-            <button
-              onClick={() => setShowChainEditor(true)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              title="Prompt Chaining"
-            >
-              <LinkIcon size={18} />
-            </button>
-            <button
-              onClick={() => setShowVersionHistory(true)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-              title="Version History"
-            >
-              <History size={18} />
-            </button>
-            <div className="relative group">
-              <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <FileDown size={18} />
-              </button>
-              <div className="absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg hidden group-hover:block z-10">
-                <button onClick={() => handleExport('json')} className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left">
-                  Export as JSON
-                </button>
-                <button onClick={() => handleExport('md')} className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left">
-                  Export as Markdown
-                </button>
-                <button onClick={() => handleExport('txt')} className="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 w-full text-left">
-                  Export as Text
-                </button>
-              </div>
-            </div>
-            <button
-              onClick={handleDelete}
-              className="p-2 hover:bg-red-100 dark:hover:bg-red-900 text-red-600 rounded-lg"
-            >
-              <Trash2 size={18} />
-            </button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden relative">
-            <button
-              onClick={() => setShowMobileMenu(!showMobileMenu)}
-              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-            >
-              <MoreVertical size={18} />
-            </button>
-            
-            {showMobileMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowMobileMenu(false)}
-                />
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20 py-1">
-                  <button
-                    onClick={() => {
-                      handleCopy();
-                      setShowMobileMenu(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <Copy size={16} />
-                    Copy Content
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleToggleFavorite();
-                      setShowMobileMenu(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <Star size={16} className={prompt?.favorite ? 'fill-yellow-400 text-yellow-400' : ''} />
-                    {prompt?.favorite ? 'Unfavorite' : 'Favorite'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowChainEditor(true);
-                      setShowMobileMenu(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <LinkIcon size={16} />
-                    Prompt Chaining
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowVersionHistory(true);
-                      setShowMobileMenu(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <History size={16} />
-                    Version History
-                  </button>
-                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                  <div className="px-4 py-1 text-xs text-gray-500 font-medium">Export</div>
-                  <button
-                    onClick={() => {
-                      handleExport('json');
-                      setShowMobileMenu(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <FileDown size={16} />
-                    JSON
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleExport('md');
-                      setShowMobileMenu(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <FileDown size={16} />
-                    Markdown
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleExport('txt');
-                      setShowMobileMenu(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    <FileDown size={16} />
-                    Text
-                  </button>
-                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                  <button
-                    onClick={() => {
-                      handleDelete();
-                      setShowMobileMenu(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 size={16} />
-                    Delete Prompt
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-
-          <button
+            {zenMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setShowPreview(!showPreview)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
-            title={showPreview ? "Edit" : "Preview"}
+            title={showPreview ? "Hide Preview" : "Show Preview"}
           >
             {showPreview ? <Code size={18} /> : <Eye size={18} />}
-          </button>
+          </Button>
+          <div className="h-6 w-px bg-border mx-1" />
+          <Button
+            onClick={handleSave}
+            disabled={!hasChanges || saving}
+            className="min-w-[80px]"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </Button>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden relative">
-        {/* Editor Column */}
-        <div className={`${showPreview ? 'hidden md:flex md:w-1/2' : 'w-full'} border-r border-gray-200 dark:border-gray-700 flex flex-col bg-gray-50 dark:bg-gray-900`}>
-          {/* Stats Bar */}
-          <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 text-xs text-gray-600 dark:text-gray-400 flex items-center gap-4 border-b border-gray-200 dark:border-gray-700 overflow-x-auto whitespace-nowrap">
-          <span>{stats.words || 0} words</span>
-          <span>•</span>
-          <span>{stats.characters || 0} characters</span>
-          <span>•</span>
-          <span>{stats.tokens || 0} tokens</span>
-          <span>•</span>
-          <span>{stats.lines || 0} lines</span>
-          {stats.variables && stats.variables.length > 0 && (
-            <>
-              <span>•</span>
-              <span className="text-yellow-600 dark:text-yellow-400">
-                {stats.variables.length} variable{stats.variables.length > 1 ? 's' : ''}
-              </span>
-            </>
-          )}
-        </div>
-
-          {/* Editor Area */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-            {/* Tags Section */}
-            <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Tag size={16} className="text-gray-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Tags</span>
-            </div>
-            <div className="flex flex-wrap gap-2 mb-2">
+      {/* Main Editor Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Editor */}
+        <div className={cn(
+          "flex flex-col transition-all duration-300",
+          showPreview ? "w-full md:w-1/2 border-r border-border" : "w-full max-w-3xl mx-auto"
+        )}>
+          {/* Tags & Stats Bar */}
+          <div className="px-4 py-2 border-b border-border bg-muted/30 flex items-center justify-between text-xs text-muted-foreground overflow-x-auto">
+            <div className="flex items-center gap-2">
               {tags.map(tag => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm"
-                >
-                  {tag}
-                  <button
-                    onClick={() => handleRemoveTag(tag)}
-                    className="hover:text-blue-900 dark:hover:text-blue-100"
-                  >
-                    <X size={14} />
-                  </button>
+                <span key={tag} className="px-1.5 py-0.5 bg-secondary rounded-full flex items-center gap-1">
+                  #{tag}
+                  <button onClick={() => handleRemoveTag(tag)} className="hover:text-destructive"><MoreVertical size={10} className="rotate-45" /></button>
                 </span>
               ))}
+              <div className="flex items-center gap-1">
+                <input
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                  placeholder="+ Tag"
+                  className="bg-transparent border-none outline-none w-16 placeholder:text-muted-foreground/50"
+                />
+              </div>
             </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                placeholder="Add tag..."
-                className="input text-sm"
-              />
-              <button
-                onClick={handleAddTag}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm"
-              >
-                Add
-              </button>
+            <div className="flex items-center gap-3 shrink-0">
+              <span>{stats.words || 0} words</span>
+              <span>{stats.characters || 0} chars</span>
             </div>
           </div>
-          
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full h-full bg-transparent border-0 focus:outline-none resize-none font-mono text-sm"
-              placeholder="Write your prompt in markdown...
 
-Use **bold**, *italic*, `code`, and more!
-
-Template variables: {{variable_name}}"
-            />
-          </div>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            className="flex-1 w-full p-4 sm:p-6 bg-transparent border-none resize-none focus:outline-none font-mono text-sm leading-relaxed"
+            placeholder="Start writing your prompt..."
+            spellCheck={false}
+          />
         </div>
 
-        {/* Preview Column */}
+        {/* Preview */}
         {showPreview && (
-          <div className={`w-full md:w-1/2 bg-white dark:bg-gray-800 overflow-y-auto p-4 sm:p-6 ${showPreview ? 'block' : 'hidden'}`}>
-            <div className="max-w-3xl mx-auto">
-              <div className="prose prose-slate dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:text-base prose-li:text-base prose-code:text-sm prose-code:bg-gray-100 prose-code:dark:bg-gray-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-pre:bg-gray-100 prose-pre:dark:bg-gray-800">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    code({node, inline, className, children, ...props}) {
-                      return inline ? (
-                        <code className="bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-sm font-mono" {...props}>
+          <div className="hidden md:block w-1/2 bg-muted/10 overflow-y-auto p-4 sm:p-8">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  code({ node, inline, className, children, ...props }) {
+                    return inline ? (
+                      <code className="bg-muted px-1 py-0.5 rounded font-mono text-xs" {...props}>
+                        {children}
+                      </code>
+                    ) : (
+                      <pre className="bg-muted p-4 rounded-lg overflow-x-auto">
+                        <code className="font-mono text-xs" {...props}>
                           {children}
                         </code>
-                      ) : (
-                        <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto">
-                          <code className="text-sm font-mono" {...props}>
-                            {children}
-                          </code>
-                        </pre>
-                      );
-                    },
-                    h1: ({children}) => <h1 className="text-3xl font-bold mt-6 mb-4">{children}</h1>,
-                    h2: ({children}) => <h2 className="text-2xl font-bold mt-5 mb-3">{children}</h2>,
-                    h3: ({children}) => <h3 className="text-xl font-bold mt-4 mb-2">{children}</h3>,
-                    ul: ({children}) => <ul className="list-disc pl-6 my-4 space-y-2">{children}</ul>,
-                    ol: ({children}) => <ol className="list-decimal pl-6 my-4 space-y-2">{children}</ol>,
-                    li: ({children}) => <li className="text-base">{children}</li>,
-                    p: ({children}) => <p className="text-base my-3">{children}</p>,
-                    blockquote: ({children}) => (
-                      <blockquote className="border-l-4 border-blue-500 pl-4 italic my-4 text-gray-700 dark:text-gray-300">
-                        {children}
-                      </blockquote>
-                    ),
-                  }}
-                >
-                  {content || '*Preview will appear here...*'}
-                </ReactMarkdown>
-              </div>
+                      </pre>
+                    );
+                  }
+                }}
+              >
+                {content || '*Preview will appear here...*'}
+              </ReactMarkdown>
             </div>
           </div>
         )}
       </div>
-      
+
       {/* Modals */}
       {showChainEditor && (
         <PromptChainEditor
@@ -507,7 +247,7 @@ Template variables: {{variable_name}}"
           onClose={() => setShowChainEditor(false)}
         />
       )}
-      
+
       {showVersionHistory && (
         <VersionHistory
           promptId={id}

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '@promptzy/shared';
-import { UserPlus, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
+import { UserPlus, Mail, Lock, AlertCircle, CheckCircle, Star } from 'lucide-react';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { motion } from 'framer-motion';
 
 export default function SignUpPage() {
   const navigate = useNavigate();
@@ -41,114 +44,136 @@ export default function SignUpPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center max-w-md">
-          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="text-green-500" size={32} />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Account Created!</h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            Welcome to Promptzy. Redirecting to your dashboard...
-          </p>
+      <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden">
+        <div className="absolute inset-0 w-full h-full">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-green-500/20 blur-[100px] animate-float" />
         </div>
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="w-full max-w-md p-6"
+        >
+          <div className="glass-card rounded-3xl p-8 text-center border-green-500/20 bg-green-500/5 backdrop-blur-xl">
+            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
+              <CheckCircle className="text-green-500 w-10 h-10" />
+            </div>
+            <h2 className="text-3xl font-bold text-foreground mb-3 font-heading">Account Created!</h2>
+            <p className="text-muted-foreground text-lg">
+              Welcome to the future of prompting. Redirecting...
+            </p>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent mb-2">
-            Promptzy
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-background">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 w-full h-full">
+        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/20 blur-[100px] animate-float" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-500/20 blur-[100px] animate-float" style={{ animationDelay: '-2s' }} />
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-md relative z-10 p-6"
+      >
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-cyan-500 mb-6 shadow-lg shadow-blue-500/30"
+          >
+            <Star className="text-white w-8 h-8" />
+          </motion.div>
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-cyan-500 to-purple-500 mb-2 font-heading tracking-tight">
+            Join Promptzy
           </h1>
-          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">Start organizing your prompts today</p>
+          <p className="text-muted-foreground text-lg">Begin your journey today</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8">
-          <div className="flex items-center gap-2 mb-6">
-            <UserPlus className="text-blue-500" size={24} />
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Create Account</h2>
-          </div>
-
+        <div className="glass-card rounded-3xl p-8 backdrop-blur-xl border-white/10 dark:border-white/5 shadow-2xl">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
-              <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3 text-destructive text-sm"
+            >
+              <AlertCircle className="shrink-0 mt-0.5" size={16} />
+              <p>{error}</p>
+            </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Email
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-sm font-medium ml-1">Email</label>
+              <div className="relative group">
+                <Mail className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="input pl-10"
-                  placeholder="you@example.com"
+                  className="pl-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
+                  placeholder="name@example.com"
                   required
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
+            <div className="space-y-2">
+              <label className="text-sm font-medium ml-1">Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <Input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="input pl-10"
+                  className="pl-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
                   placeholder="••••••••"
                   required
                 />
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Confirm Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                <input
+            <div className="space-y-2">
+              <label className="text-sm font-medium ml-1">Confirm Password</label>
+              <div className="relative group">
+                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                <Input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="input pl-10"
+                  className="pl-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
                   placeholder="••••••••"
                   required
                 />
               </div>
             </div>
 
-            <button
+            <Button
               type="submit"
+              className="w-full h-12 rounded-xl text-lg font-medium shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all duration-300 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 border-none"
               disabled={loading}
-              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              size="lg"
             >
               {loading ? 'Creating account...' : 'Sign Up'}
-            </button>
+            </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm">
-            <p className="text-gray-600 dark:text-gray-400">
+          <div className="mt-8 text-center">
+            <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-500 hover:text-blue-600 font-medium">
+              <Link to="/login" className="text-primary hover:text-primary/80 font-semibold hover:underline transition-all">
                 Sign in
               </Link>
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

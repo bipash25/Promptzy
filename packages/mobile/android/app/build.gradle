@@ -89,6 +89,12 @@ android {
             }
         }
     }
+
+    externalNativeBuild {
+        cmake {
+            buildStagingDirectory file("C:/cxx")
+        }
+    }
     
     // Workaround for path length on Windows
     packagingOptions {
