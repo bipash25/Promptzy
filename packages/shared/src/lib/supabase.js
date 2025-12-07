@@ -1,25 +1,39 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Support both Vite (import.meta.env) and React Native (process.env)
-const supabaseUrl = typeof import.meta !== 'undefined'
-  ? import.meta.env.VITE_SUPABASE_URL
-  : (process.env.REACT_APP_SUPABASE_URL || process.env.EXPO_PUBLIC_SUPABASE_URL);
+const getEnvVar = (viteKey, reactNativeKeys) => {
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env[viteKey];
+  }
+  if (typeof process !== 'undefined' && process.env) {
+    for (const key of reactNativeKeys) {
+      if (process.env[key]) return process.env[key];
+    }
+  }
+  return undefined;
+};
 
-const supabaseAnonKey = typeof import.meta !== 'undefined'
-  ? import.meta.env.VITE_SUPABASE_ANON_KEY
-  : (process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY);
+const supabaseUrl = getEnvVar('VITE_SUPABASE_URL', ['REACT_APP_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_URL']);
+const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY', ['REACT_APP_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_ANON_KEY']);
 
-// Debug logging
-console.log('🔧 Supabase Configuration:');
-console.log('  URL:', supabaseUrl);
-console.log('  Key (first 20 chars):', supabaseAnonKey?.substring(0, 20) + '...');
-console.log('  Environment:', typeof import.meta !== 'undefined' ? 'Vite' : 'React Native');
+// Only log in development mode
+const isDev = (typeof import.meta !== 'undefined' && import.meta.env?.DEV) ||
+              (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development');
+
+if (isDev) {
+  console.log('🔧 Supabase Configuration:', {
+    url: supabaseUrl ? '✓ Set' : '✗ Missing',
+    key: supabaseAnonKey ? '✓ Set' : '✗ Missing',
+  });
+}
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Missing Supabase environment variables!');
-  console.error('  URL:', supabaseUrl);
-  console.error('  Key:', supabaseAnonKey ? 'Present' : 'Missing');
-  throw new Error('Missing Supabase environment variables');
+  const error = new Error('Missing Supabase environment variables. Please check your .env file.');
+  if (isDev) {
+    console.error('❌ Missing Supabase environment variables!');
+    console.error('  Required: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+  }
+  throw error;
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { promptService, markdownUtils } from '@promptzy/shared';
 import ReactMarkdown from 'react-markdown';
@@ -7,17 +7,12 @@ import {
   ArrowLeft,
   Save,
   Copy,
-  Star,
-  Trash2,
   Eye,
   Code,
   Maximize2,
   Minimize2,
   MoreVertical,
-  Share2,
-  History,
-  Link as LinkIcon,
-  FileDown
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -42,6 +37,20 @@ export default function EditorPage() {
   const [showChainEditor, setShowChainEditor] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [tagInput, setTagInput] = useState('');
+
+  // Warn user before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasChanges) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasChanges]);
 
   useEffect(() => {
     if (id === 'new') {
@@ -72,7 +81,7 @@ export default function EditorPage() {
     }
   }, [title, content, tags, prompt]);
 
-  const loadPrompt = async () => {
+  const loadPrompt = useCallback(async () => {
     try {
       const data = await promptService.getById(id);
       setPrompt(data);
@@ -86,7 +95,7 @@ export default function EditorPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, navigate]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -136,7 +145,20 @@ export default function EditorPage() {
       {/* Toolbar */}
       <div className="border-b border-border bg-card/50 backdrop-blur-sm p-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              if (hasChanges) {
+                if (window.confirm('You have unsaved changes. Are you sure you want to leave?')) {
+                  navigate('/');
+                }
+              } else {
+                navigate('/');
+              }
+            }}
+            aria-label="Go back to dashboard"
+          >
             <ArrowLeft size={20} />
           </Button>
           <Input
@@ -146,8 +168,9 @@ export default function EditorPage() {
             placeholder="Untitled Prompt"
           />
           {hasChanges && (
-            <span className="text-xs text-orange-500 font-medium px-2 py-0.5 bg-orange-500/10 rounded-full shrink-0">
-              Unsaved
+            <span className="text-xs text-orange-500 font-medium px-2 py-0.5 bg-orange-500/10 rounded-full shrink-0 flex items-center gap-1">
+              <AlertTriangle size={12} />
+              Unsaved changes
             </span>
           )}
         </div>
@@ -158,6 +181,8 @@ export default function EditorPage() {
             size="icon"
             onClick={() => setZenMode(!zenMode)}
             title={zenMode ? "Exit Zen Mode" : "Zen Mode"}
+            aria-label={zenMode ? "Exit Zen Mode" : "Enter Zen Mode"}
+            aria-pressed={zenMode}
             className="hidden sm:flex"
           >
             {zenMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
@@ -167,6 +192,8 @@ export default function EditorPage() {
             size="icon"
             onClick={() => setShowPreview(!showPreview)}
             title={showPreview ? "Hide Preview" : "Show Preview"}
+            aria-label={showPreview ? "Hide Preview" : "Show Preview"}
+            aria-pressed={showPreview}
           >
             {showPreview ? <Code size={18} /> : <Eye size={18} />}
           </Button>
@@ -198,12 +225,20 @@ export default function EditorPage() {
                 </span>
               ))}
               <div className="flex items-center gap-1">
+                <label htmlFor="tag-input" className="sr-only">Add a tag</label>
                 <input
+                  id="tag-input"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddTag();
+                    }
+                  }}
                   placeholder="+ Tag"
-                  className="bg-transparent border-none outline-none w-16 placeholder:text-muted-foreground/50"
+                  aria-label="Add a tag"
+                  className="bg-transparent border-none outline-none w-16 placeholder:text-muted-foreground/50 text-xs"
                 />
               </div>
             </div>
@@ -214,11 +249,13 @@ export default function EditorPage() {
           </div>
 
           <textarea
+            id="prompt-content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="flex-1 w-full p-4 sm:p-6 bg-transparent border-none resize-none focus:outline-none font-mono text-sm leading-relaxed"
             placeholder="Start writing your prompt..."
             spellCheck={false}
+            aria-label="Prompt content"
           />
         </div>
 

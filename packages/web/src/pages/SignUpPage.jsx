@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authService } from '@promptzy/shared';
-import { UserPlus, Mail, Lock, AlertCircle, CheckCircle, Star } from 'lucide-react';
+import { authService, getUserFriendlyError } from '@promptzy/shared';
+import { Mail, Lock, AlertCircle, CheckCircle, Star, Eye, EyeOff, Check, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { motion } from 'framer-motion';
@@ -11,32 +11,69 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  // Password strength validation
+  const passwordRequirements = useMemo(() => ({
+    minLength: password.length >= 6,
+    hasUppercase: /[A-Z]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasNumber: /\d/.test(password),
+  }), [password]);
+
+  const passwordStrength = useMemo(() => {
+    const met = Object.values(passwordRequirements).filter(Boolean).length;
+    if (met === 0) return { label: '', color: '' };
+    if (met <= 2) return { label: 'Weak', color: 'text-red-500' };
+    if (met === 3) return { label: 'Fair', color: 'text-yellow-500' };
+    return { label: 'Strong', color: 'text-green-500' };
+  }, [passwordRequirements]);
+
+  const validateForm = () => {
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      return false;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return false;
+    }
+    if (!password) {
+      setError('Please enter a password.');
+      return false;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return false;
+    }
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return false;
+    }
+    return true;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (!validateForm()) {
       return;
     }
 
     setLoading(true);
 
     try {
-      await authService.signUp(email, password);
+      await authService.signUp(email.trim(), password);
       setSuccess(true);
       setTimeout(() => navigate('/'), 2000);
     } catch (err) {
-      setError(err.message || 'Failed to create account');
+      setError(getUserFriendlyError(err));
     } finally {
       setLoading(false);
     }
@@ -110,48 +147,104 @@ export default function SignUpPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <label className="text-sm font-medium ml-1">Email</label>
+              <label htmlFor="email" className="text-sm font-medium ml-1">Email</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
+                  id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
                   placeholder="name@example.com"
                   required
+                  autoComplete="email"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium ml-1">Password</label>
+              <label htmlFor="password" className="text-sm font-medium ml-1">Password</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
-                  type="password"
+                  id="password"
+                  type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
+                  className="pl-12 pr-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
                   placeholder="••••••••"
                   required
+                  autoComplete="new-password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
+              {/* Password strength indicator */}
+              {password && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Password strength:</span>
+                    <span className={passwordStrength.color}>{passwordStrength.label}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1 text-xs">
+                    <div className={`flex items-center gap-1 ${passwordRequirements.minLength ? 'text-green-500' : 'text-muted-foreground'}`}>
+                      {passwordRequirements.minLength ? <Check size={12} /> : <X size={12} />}
+                      6+ characters
+                    </div>
+                    <div className={`flex items-center gap-1 ${passwordRequirements.hasUppercase ? 'text-green-500' : 'text-muted-foreground'}`}>
+                      {passwordRequirements.hasUppercase ? <Check size={12} /> : <X size={12} />}
+                      Uppercase
+                    </div>
+                    <div className={`flex items-center gap-1 ${passwordRequirements.hasLowercase ? 'text-green-500' : 'text-muted-foreground'}`}>
+                      {passwordRequirements.hasLowercase ? <Check size={12} /> : <X size={12} />}
+                      Lowercase
+                    </div>
+                    <div className={`flex items-center gap-1 ${passwordRequirements.hasNumber ? 'text-green-500' : 'text-muted-foreground'}`}>
+                      {passwordRequirements.hasNumber ? <Check size={12} /> : <X size={12} />}
+                      Number
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium ml-1">Confirm Password</label>
+              <label htmlFor="confirmPassword" className="text-sm font-medium ml-1">Confirm Password</label>
               <div className="relative group">
                 <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
-                  type="password"
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="pl-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
+                  className="pl-12 pr-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
                   placeholder="••••••••"
                   required
+                  autoComplete="new-password"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
+              {/* Password match indicator */}
+              {confirmPassword && (
+                <div className={`flex items-center gap-1 text-xs ${password === confirmPassword ? 'text-green-500' : 'text-red-500'}`}>
+                  {password === confirmPassword ? <Check size={12} /> : <X size={12} />}
+                  {password === confirmPassword ? 'Passwords match' : 'Passwords do not match'}
+                </div>
+              )}
             </div>
 
             <Button

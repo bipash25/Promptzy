@@ -3,7 +3,9 @@ import { useParams } from 'react-router-dom';
 import { shareService, markdownUtils } from '@promptzy/shared';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Copy, Eye, Code, Lock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Copy, Eye, Code, Lock, CheckCircle, AlertCircle, ExternalLink } from 'lucide-react';
+import { Input } from '../components/ui/Input';
+import { Button } from '../components/ui/Button';
 
 export default function SharedPromptPage() {
   const { token } = useParams();
@@ -61,10 +63,10 @@ export default function SharedPromptPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading shared prompt...</p>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+          <p className="text-muted-foreground">Loading shared prompt...</p>
         </div>
       </div>
     );
@@ -72,35 +74,35 @@ export default function SharedPromptPage() {
 
   if (needsPassword && !prompt) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-        <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="text-blue-500" size={32} />
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border">
+          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="text-primary" size={32} />
           </div>
-          <h2 className="text-2xl font-bold text-center mb-2">Password Required</h2>
-          <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
+          <h2 className="text-2xl font-bold text-center mb-2 text-foreground">Password Required</h2>
+          <p className="text-muted-foreground text-center mb-6">
             This prompt is protected. Enter the password to view.
           </p>
           
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-2">
-              <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
+              <AlertCircle className="text-destructive flex-shrink-0 mt-0.5" size={18} />
+              <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
 
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <input
+            <Input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password"
-              className="input"
               autoFocus
+              aria-label="Password"
             />
-            <button type="submit" className="w-full btn-primary">
+            <Button type="submit" variant="gradient" className="w-full">
               Unlock Prompt
-            </button>
+            </Button>
           </form>
         </div>
       </div>
@@ -109,13 +111,20 @@ export default function SharedPromptPage() {
 
   if (error && !needsPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
-        <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
-          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="text-red-500" size={32} />
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 text-center border border-border">
+          <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="text-destructive" size={32} />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Error</h2>
-          <p className="text-gray-600 dark:text-gray-400">{error}</p>
+          <h2 className="text-2xl font-bold mb-2 text-foreground">Error</h2>
+          <p className="text-muted-foreground">{error}</p>
+          <Button
+            variant="outline"
+            className="mt-6"
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </Button>
         </div>
       </div>
     );
@@ -124,48 +133,54 @@ export default function SharedPromptPage() {
   if (!prompt) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
+      <header className="bg-card border-b border-border sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <h1 className="text-2xl font-bold">{prompt.title}</h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <h1 className="text-2xl font-bold text-foreground">{prompt.title}</h1>
+              <p className="text-sm text-muted-foreground mt-1">
                 Shared via Promptzy
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleCopy}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg relative"
+                className="relative"
+                aria-label={copySuccess ? "Copied!" : "Copy to clipboard"}
+                title="Copy to clipboard"
               >
-                <Copy size={20} />
-                {copySuccess && (
-                  <span className="absolute -top-8 right-0 bg-green-500 text-white text-xs px-2 py-1 rounded">
-                    Copied!
-                  </span>
+                {copySuccess ? (
+                  <CheckCircle size={20} className="text-green-500" />
+                ) : (
+                  <Copy size={20} />
                 )}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowPreview(!showPreview)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                aria-label={showPreview ? "Show raw code" : "Show preview"}
+                title={showPreview ? "Show raw code" : "Show preview"}
               >
                 {showPreview ? <Code size={20} /> : <Eye size={20} />}
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
             <span>{stats.words || 0} words</span>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <span>{stats.characters || 0} characters</span>
-            <span>•</span>
+            <span className="hidden sm:inline">•</span>
             <span>{stats.tokens || 0} tokens</span>
             {stats.variables && stats.variables.length > 0 && (
               <>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span className="text-yellow-600 dark:text-yellow-400">
                   {stats.variables.length} variable{stats.variables.length > 1 ? 's' : ''}
                 </span>
@@ -173,11 +188,11 @@ export default function SharedPromptPage() {
             )}
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        <div className="bg-card rounded-2xl shadow-lg overflow-hidden border border-border">
           {showPreview ? (
             <div className="prose dark:prose-invert max-w-none p-8">
               <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -185,25 +200,29 @@ export default function SharedPromptPage() {
               </ReactMarkdown>
             </div>
           ) : (
-            <pre className="p-8 overflow-x-auto">
-              <code className="text-sm font-mono">{prompt.content}</code>
+            <pre className="p-8 overflow-x-auto bg-muted/50">
+              <code className="text-sm font-mono text-foreground">{prompt.content}</code>
             </pre>
           )}
         </div>
 
         {/* Call to Action */}
         <div className="mt-8 text-center">
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
+          <p className="text-muted-foreground mb-4">
             Want to organize your own prompts?
           </p>
-          <a
-            href="/signup"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg hover:from-blue-600 hover:to-purple-600 transition font-medium"
+          <Button
+            variant="gradient"
+            size="lg"
+            asChild
           >
-            Get Started with Promptzy
-          </a>
+            <a href="/signup" className="inline-flex items-center gap-2">
+              Get Started with Promptzy
+              <ExternalLink size={16} />
+            </a>
+          </Button>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

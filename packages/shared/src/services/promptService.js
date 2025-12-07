@@ -1,8 +1,19 @@
 import { supabase } from '../lib/supabase';
 
+// Helper to ensure user is authenticated
+async function requireAuth() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    throw new Error('Authentication required. Please log in.');
+  }
+  return user;
+}
+
 export const promptService = {
   // Get all prompts for current user
   async getAll(filters = {}) {
+    await requireAuth();
+    
     let query = supabase
       .from('prompts')
       .select('*, projects(name, color)')
@@ -38,6 +49,12 @@ export const promptService = {
 
   // Get single prompt with full details
   async getById(id) {
+    await requireAuth();
+    
+    if (!id) {
+      throw new Error('Prompt ID is required');
+    }
+    
     const { data, error } = await supabase
       .from('prompts')
       .select(`
@@ -60,6 +77,12 @@ export const promptService = {
 
   // Get prompt versions/history
   async getVersions(promptId) {
+    await requireAuth();
+    
+    if (!promptId) {
+      throw new Error('Prompt ID is required');
+    }
+    
     const { data, error } = await supabase
       .from('prompt_versions')
       .select('*')
@@ -72,7 +95,15 @@ export const promptService = {
 
   // Create new prompt
   async create(prompt) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
+    
+    if (!prompt) {
+      throw new Error('Prompt data is required');
+    }
+    
+    if (!prompt.title || prompt.title.trim() === '') {
+      throw new Error('Prompt title is required');
+    }
     
     const { data, error } = await supabase
       .from('prompts')
@@ -89,6 +120,12 @@ export const promptService = {
 
   // Update prompt
   async update(id, updates) {
+    await requireAuth();
+    
+    if (!id) {
+      throw new Error('Prompt ID is required');
+    }
+    
     const { data, error } = await supabase
       .from('prompts')
       .update(updates)
@@ -102,6 +139,12 @@ export const promptService = {
 
   // Delete prompt
   async delete(id) {
+    await requireAuth();
+    
+    if (!id) {
+      throw new Error('Prompt ID is required');
+    }
+    
     const { error } = await supabase
       .from('prompts')
       .delete()
@@ -112,16 +155,28 @@ export const promptService = {
 
   // Toggle favorite
   async toggleFavorite(id, currentValue) {
+    if (!id) {
+      throw new Error('Prompt ID is required');
+    }
     return this.update(id, { favorite: !currentValue });
   },
 
   // Archive prompt
   async archive(id) {
+    if (!id) {
+      throw new Error('Prompt ID is required');
+    }
     return this.update(id, { is_archived: true });
   },
 
   // Increment usage count
   async incrementUsage(id) {
+    await requireAuth();
+    
+    if (!id) {
+      throw new Error('Prompt ID is required');
+    }
+    
     const { data, error } = await supabase.rpc('increment_usage', {
       prompt_id: id,
     });
@@ -144,6 +199,8 @@ export const promptService = {
 
   // Get archived prompts
   async getArchived() {
+    await requireAuth();
+    
     const { data, error } = await supabase
       .from('prompts')
       .select('*, projects(name, color)')
@@ -156,7 +213,11 @@ export const promptService = {
 
   // Check for duplicate content
   async checkDuplicate(content, excludeId = null) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
+    
+    if (!content || content.trim() === '') {
+      return [];
+    }
     
     let query = supabase
       .from('prompts')
@@ -176,6 +237,16 @@ export const promptService = {
 
   // Add note to prompt
   async addNote(promptId, content) {
+    await requireAuth();
+    
+    if (!promptId) {
+      throw new Error('Prompt ID is required');
+    }
+    
+    if (!content || content.trim() === '') {
+      throw new Error('Note content is required');
+    }
+    
     const { data, error } = await supabase
       .from('prompt_notes')
       .insert({
@@ -191,6 +262,12 @@ export const promptService = {
 
   // Update note
   async updateNote(noteId, content) {
+    await requireAuth();
+    
+    if (!noteId) {
+      throw new Error('Note ID is required');
+    }
+    
     const { data, error } = await supabase
       .from('prompt_notes')
       .update({ content })
@@ -204,6 +281,12 @@ export const promptService = {
 
   // Delete note
   async deleteNote(noteId) {
+    await requireAuth();
+    
+    if (!noteId) {
+      throw new Error('Note ID is required');
+    }
+    
     const { error } = await supabase
       .from('prompt_notes')
       .delete()
@@ -214,7 +297,15 @@ export const promptService = {
 
   // Create prompt link (chaining)
   async linkPrompts(sourceId, targetId, orderIndex = 0) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
+    
+    if (!sourceId || !targetId) {
+      throw new Error('Both source and target prompt IDs are required');
+    }
+    
+    if (sourceId === targetId) {
+      throw new Error('Cannot link a prompt to itself');
+    }
     
     const { data, error } = await supabase
       .from('prompt_links')
@@ -233,6 +324,12 @@ export const promptService = {
 
   // Remove prompt link
   async unlinkPrompts(sourceId, targetId) {
+    await requireAuth();
+    
+    if (!sourceId || !targetId) {
+      throw new Error('Both source and target prompt IDs are required');
+    }
+    
     const { error } = await supabase
       .from('prompt_links')
       .delete()
@@ -244,7 +341,7 @@ export const promptService = {
 
   // Get all unique tags
   async getAllTags() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
     
     const { data, error } = await supabase
       .from('prompts')
@@ -266,6 +363,16 @@ export const promptService = {
 
   // Revert to specific version
   async revertToVersion(promptId, versionNumber) {
+    await requireAuth();
+    
+    if (!promptId) {
+      throw new Error('Prompt ID is required');
+    }
+    
+    if (versionNumber === undefined || versionNumber === null) {
+      throw new Error('Version number is required');
+    }
+    
     const { data: version, error: versionError } = await supabase
       .from('prompt_versions')
       .select('*')

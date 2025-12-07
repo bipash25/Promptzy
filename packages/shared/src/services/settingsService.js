@@ -1,9 +1,18 @@
 import { supabase } from '../lib/supabase';
 
+// Helper to ensure user is authenticated
+async function requireAuth() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    throw new Error('Authentication required. Please log in.');
+  }
+  return user;
+}
+
 export const settingsService = {
   // Get user settings
   async get() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
     
     const { data, error } = await supabase
       .from('user_settings')
@@ -24,7 +33,7 @@ export const settingsService = {
 
   // Create default settings
   async create() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
     
     const defaultSettings = {
       user_id: user.id,
@@ -49,7 +58,11 @@ export const settingsService = {
 
   // Update settings
   async update(updates) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
+    
+    if (!updates || Object.keys(updates).length === 0) {
+      throw new Error('No settings to update');
+    }
     
     const { data, error } = await supabase
       .from('user_settings')
@@ -64,40 +77,66 @@ export const settingsService = {
 
   // Update theme
   async updateTheme(theme) {
+    const validThemes = ['light', 'dark', 'system'];
+    if (!validThemes.includes(theme)) {
+      throw new Error(`Invalid theme. Must be one of: ${validThemes.join(', ')}`);
+    }
     return this.update({ theme });
   },
 
   // Update font settings
   async updateFont(fontFamily, fontSize) {
-    return this.update({ 
-      font_family: fontFamily, 
-      font_size: fontSize 
-    });
+    if (fontSize && (fontSize < 8 || fontSize > 32)) {
+      throw new Error('Font size must be between 8 and 32');
+    }
+    
+    const updates = {};
+    if (fontFamily) updates.font_family = fontFamily;
+    if (fontSize) updates.font_size = fontSize;
+    
+    if (Object.keys(updates).length === 0) {
+      throw new Error('Font family or font size is required');
+    }
+    
+    return this.update(updates);
   },
 
   // Update layout mode
   async updateLayout(mode) {
+    const validModes = ['comfortable', 'compact'];
+    if (!validModes.includes(mode)) {
+      throw new Error(`Invalid layout mode. Must be one of: ${validModes.join(', ')}`);
+    }
     return this.update({ layout_mode: mode });
   },
 
   // Toggle sync
   async toggleSync(enabled) {
+    if (typeof enabled !== 'boolean') {
+      throw new Error('Enabled must be a boolean value');
+    }
     return this.update({ sync_enabled: enabled });
   },
 
   // Toggle auto backup
   async toggleAutoBackup(enabled) {
+    if (typeof enabled !== 'boolean') {
+      throw new Error('Enabled must be a boolean value');
+    }
     return this.update({ auto_backup: enabled });
   },
 
   // Toggle encryption
   async toggleEncryption(enabled) {
+    if (typeof enabled !== 'boolean') {
+      throw new Error('Enabled must be a boolean value');
+    }
     return this.update({ encryption_enabled: enabled });
   },
 
   // Export all user data
   async exportAllData() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
     
     // Get all data
     const [projects, prompts, settings] = await Promise.all([
@@ -123,7 +162,11 @@ export const settingsService = {
 
   // Import user data
   async importData(backupData) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
+    
+    if (!backupData) {
+      throw new Error('Backup data is required');
+    }
     
     // Validate backup format
     if (!backupData.version || !backupData.projects || !backupData.prompts) {

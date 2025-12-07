@@ -1,8 +1,19 @@
 import { supabase } from '../lib/supabase';
 
+// Helper to ensure user is authenticated
+async function requireAuth() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    throw new Error('Authentication required. Please log in.');
+  }
+  return user;
+}
+
 export const projectService = {
   // Get all projects for current user
   async getAll() {
+    await requireAuth(); // Ensure user is logged in
+    
     const { data, error } = await supabase
       .from('projects')
       .select('*')
@@ -60,7 +71,11 @@ export const projectService = {
 
   // Create new project
   async create(project) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
+    
+    if (!project || !project.name || project.name.trim() === '') {
+      throw new Error('Project name is required');
+    }
     
     const { data, error } = await supabase
       .from('projects')
@@ -77,6 +92,12 @@ export const projectService = {
 
   // Update project
   async update(id, updates) {
+    await requireAuth();
+    
+    if (!id) {
+      throw new Error('Project ID is required');
+    }
+    
     const { data, error } = await supabase
       .from('projects')
       .update(updates)
@@ -90,6 +111,12 @@ export const projectService = {
 
   // Delete project (and all its prompts)
   async delete(id) {
+    await requireAuth();
+    
+    if (!id) {
+      throw new Error('Project ID is required');
+    }
+    
     const { error } = await supabase
       .from('projects')
       .delete()
@@ -110,6 +137,8 @@ export const projectService = {
 
   // Get archived projects
   async getArchived() {
+    await requireAuth();
+    
     const { data, error } = await supabase
       .from('projects')
       .select('*')
@@ -127,7 +156,11 @@ export const projectService = {
 
   // Check for duplicate project names
   async checkDuplicate(name, parentId = null) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
+    
+    if (!name || name.trim() === '') {
+      return false;
+    }
     
     let query = supabase
       .from('projects')

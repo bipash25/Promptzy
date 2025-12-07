@@ -1,50 +1,41 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { authService, getUserFriendlyError } from '@promptzy/shared';
-import { Mail, Lock, AlertCircle, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Mail, AlertCircle, CheckCircle, ArrowLeft, KeyRound } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { motion } from 'framer-motion';
 
-export default function LoginPage() {
-  const navigate = useNavigate();
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
 
-  const validateForm = () => {
-    if (!email.trim()) {
-      setError('Please enter your email address.');
-      return false;
-    }
-    if (!password) {
-      setError('Please enter your password.');
-      return false;
-    }
-    // Basic email validation
+  const validateEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Please enter a valid email address.');
-      return false;
-    }
-    return true;
+    return emailRegex.test(email);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
-    if (!validateForm()) {
+
+    if (!email.trim()) {
+      setError('Please enter your email address.');
       return;
     }
-    
+
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      await authService.signIn(email.trim(), password);
-      navigate('/');
+      await authService.resetPassword(email.trim());
+      setSuccess(true);
     } catch (err) {
       setError(getUserFriendlyError(err));
     } finally {
@@ -52,13 +43,55 @@ export default function LoginPage() {
     }
   };
 
+  if (success) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden">
+        <div className="absolute inset-0 w-full h-full">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-green-500/20 blur-[100px] animate-float" />
+        </div>
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="w-full max-w-md p-6"
+        >
+          <div className="glass-card rounded-3xl p-8 text-center border-green-500/20 bg-green-500/5 backdrop-blur-xl">
+            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="text-green-500 w-10 h-10" />
+            </div>
+            <h2 className="text-3xl font-bold text-foreground mb-3 font-heading">Check Your Email</h2>
+            <p className="text-muted-foreground text-lg mb-6">
+              We've sent password reset instructions to <strong>{email}</strong>
+            </p>
+            <p className="text-sm text-muted-foreground mb-6">
+              Didn't receive the email? Check your spam folder or try again.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setSuccess(false)}
+                className="w-full"
+              >
+                Try different email
+              </Button>
+              <Link to="/login">
+                <Button variant="ghost" className="w-full">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to login
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-background">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 w-full h-full">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-purple-500/20 blur-[100px] animate-float" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/20 blur-[100px] animate-float" style={{ animationDelay: '-2s' }} />
-        <div className="absolute top-[20%] right-[20%] w-[20%] h-[20%] rounded-full bg-pink-500/20 blur-[80px] animate-float" style={{ animationDelay: '-4s' }} />
       </div>
 
       <motion.div
@@ -74,12 +107,12 @@ export default function LoginPage() {
             transition={{ delay: 0.2 }}
             className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-purple-600 mb-6 shadow-lg shadow-primary/30"
           >
-            <Sparkles className="text-white w-8 h-8" />
+            <KeyRound className="text-white w-8 h-8" />
           </motion.div>
           <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-pink-500 mb-2 font-heading tracking-tight">
-            Welcome Back
+            Reset Password
           </h1>
-          <p className="text-muted-foreground text-lg">Enter your portal to creativity</p>
+          <p className="text-muted-foreground text-lg">Enter your email to receive reset instructions</p>
         </div>
 
         <div className="glass-card rounded-3xl p-8 backdrop-blur-xl border-white/10 dark:border-white/5 shadow-2xl">
@@ -96,7 +129,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium ml-1">Email</label>
+              <label htmlFor="email" className="text-sm font-medium ml-1">Email Address</label>
               <div className="relative group">
                 <Mail className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
@@ -108,32 +141,8 @@ export default function LoginPage() {
                   placeholder="name@example.com"
                   required
                   autoComplete="email"
+                  autoFocus
                 />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium ml-1">Password</label>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-12 pr-12 h-12 rounded-xl bg-background/50 border-transparent focus:border-primary/50 focus:bg-background transition-all duration-300"
-                  placeholder="••••••••"
-                  required
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-3.5 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
               </div>
             </div>
 
@@ -143,26 +152,15 @@ export default function LoginPage() {
               disabled={loading}
               size="lg"
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? 'Sending...' : 'Send Reset Link'}
             </Button>
           </form>
 
-          <div className="mt-6 text-center">
-            <Link
-              to="/forgot-password"
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              Forgot your password?
+          <div className="mt-8 text-center">
+            <Link to="/login" className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-2">
+              <ArrowLeft size={16} />
+              Back to login
             </Link>
-          </div>
-
-          <div className="mt-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{' '}
-              <Link to="/signup" className="text-primary hover:text-primary/80 font-semibold hover:underline transition-all">
-                Create account
-              </Link>
-            </p>
           </div>
         </div>
       </motion.div>

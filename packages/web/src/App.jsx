@@ -1,20 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { authService } from '@promptzy/shared';
 import { useStore } from './store/useStore';
 import { AnimatePresence, motion } from 'framer-motion';
 
-// Pages
-import LoginPage from './pages/LoginPage';
-import SignUpPage from './pages/SignUpPage';
-import DashboardPage from './pages/DashboardPage';
-import EditorPage from './pages/EditorPage';
-import SettingsPage from './pages/SettingsPage';
-import SharedPromptPage from './pages/SharedPromptPage';
-import SharedProjectPage from './pages/SharedProjectPage';
-
 // Components
 import LoadingScreen from './components/LoadingScreen';
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Lazy load pages for better performance
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const SignUpPage = lazy(() => import('./pages/SignUpPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const EditorPage = lazy(() => import('./pages/EditorPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const SharedPromptPage = lazy(() => import('./pages/SharedPromptPage'));
+const SharedProjectPage = lazy(() => import('./pages/SharedProjectPage'));
 
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -44,6 +46,12 @@ function App() {
           const user = await authService.getUser();
           setUser(user);
           await loadSettings();
+          
+          // Apply saved theme from settings
+          const currentSettings = useStore.getState().settings;
+          if (currentSettings?.theme) {
+            document.documentElement.classList.toggle('dark', currentSettings.theme === 'dark');
+          }
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
@@ -77,41 +85,55 @@ function App() {
   }
 
   return (
-    <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
-        {/* Public routes */}
-        <Route
-          path="/login"
-          element={!user ? <PageWrapper><LoginPage /></PageWrapper> : <Navigate to="/" />}
-        />
-        <Route
-          path="/signup"
-          element={!user ? <PageWrapper><SignUpPage /></PageWrapper> : <Navigate to="/" />}
-        />
-        <Route
-          path="/shared/prompt/:token"
-          element={<PageWrapper><SharedPromptPage /></PageWrapper>}
-        />
-        <Route
-          path="/shared/project/:token"
-          element={<PageWrapper><SharedProjectPage /></PageWrapper>}
-        />
+    <ErrorBoundary>
+      <Suspense fallback={<LoadingScreen />}>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            {/* Public routes */}
+            <Route
+              path="/login"
+              element={!user ? <PageWrapper><LoginPage /></PageWrapper> : <Navigate to="/" />}
+            />
+            <Route
+              path="/signup"
+              element={!user ? <PageWrapper><SignUpPage /></PageWrapper> : <Navigate to="/" />}
+            />
+            <Route
+              path="/forgot-password"
+              element={!user ? <PageWrapper><ForgotPasswordPage /></PageWrapper> : <Navigate to="/" />}
+            />
+            <Route
+              path="/shared/prompt/:token"
+              element={<PageWrapper><SharedPromptPage /></PageWrapper>}
+            />
+            <Route
+              path="/shared/project/:token"
+              element={<PageWrapper><SharedProjectPage /></PageWrapper>}
+            />
 
-        {/* Protected routes */}
-        <Route
-          path="/"
-          element={user ? <PageWrapper><DashboardPage /></PageWrapper> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/editor/:id"
-          element={user ? <PageWrapper><EditorPage /></PageWrapper> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/settings"
-          element={user ? <PageWrapper><SettingsPage /></PageWrapper> : <Navigate to="/login" />}
-        />
-      </Routes>
-    </AnimatePresence>
+            {/* Protected routes */}
+            <Route
+              path="/"
+              element={user ? <PageWrapper><DashboardPage /></PageWrapper> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/editor/:id"
+              element={user ? <PageWrapper><EditorPage /></PageWrapper> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/settings"
+              element={user ? <PageWrapper><SettingsPage /></PageWrapper> : <Navigate to="/login" />}
+            />
+            
+            {/* 404 fallback */}
+            <Route
+              path="*"
+              element={<Navigate to={user ? "/" : "/login"} replace />}
+            />
+          </Routes>
+        </AnimatePresence>
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

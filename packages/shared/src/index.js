@@ -13,6 +13,14 @@ export { syncService } from './services/syncService.js';
 
 // Utilities
 export { markdownUtils } from './utils/markdown.js';
+export {
+  getUserFriendlyError,
+  getErrorCode,
+  isNetworkError,
+  isAuthError,
+  requiresReauth,
+  logError
+} from './utils/errorHandler.js';
 
 // Import for default export
 import { authService } from './services/authService.js';

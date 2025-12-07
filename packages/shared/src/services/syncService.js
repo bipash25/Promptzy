@@ -1,9 +1,27 @@
 import { supabase } from '../lib/supabase';
 
+// Helper to ensure user is authenticated
+async function requireAuth() {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
+    throw new Error('Authentication required. Please log in.');
+  }
+  return user;
+}
+
 export const syncService = {
   // Add operation to sync queue
   async queueOperation(operation, tableName, recordId, data) {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
+    
+    if (!operation || !tableName) {
+      throw new Error('Operation and table name are required');
+    }
+    
+    const validOperations = ['create', 'update', 'delete'];
+    if (!validOperations.includes(operation)) {
+      throw new Error(`Invalid operation. Must be one of: ${validOperations.join(', ')}`);
+    }
     
     const { data: queued, error } = await supabase
       .from('sync_queue')
@@ -24,7 +42,7 @@ export const syncService = {
 
   // Get pending sync operations
   async getPendingOperations() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
     
     const { data, error } = await supabase
       .from('sync_queue')
@@ -112,7 +130,7 @@ export const syncService = {
 
   // Clear synced operations
   async clearSyncedOperations() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
     
     const { error } = await supabase
       .from('sync_queue')
@@ -186,7 +204,7 @@ export const syncService = {
 
   // Get last sync time
   async getLastSyncTime() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await requireAuth();
     
     const { data, error } = await supabase
       .from('sync_queue')
