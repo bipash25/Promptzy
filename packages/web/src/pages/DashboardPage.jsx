@@ -13,19 +13,21 @@ import {
   SortAsc,
   SortDesc,
   Loader2,
-  X
+  X,
+  Sparkles
 } from 'lucide-react';
 import MainLayout from '../layouts/MainLayout';
 import PromptCard from '../components/features/PromptCard';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useToast } from '../components/ui/Toast';
+import TemplateLibrary from '../components/features/TemplateLibrary';
 
 // Custom hook for debounced search
 function useDebouncedSearch(searchQuery, prompts, filterFavorites, sortBy, sortOrder) {
   const deferredQuery = useDeferredValue(searchQuery);
   const isSearching = searchQuery !== deferredQuery;
-  
+
   const filteredPrompts = useMemo(() => {
     let filtered = prompts.filter((p) => {
       const query = deferredQuery.toLowerCase();
@@ -36,7 +38,7 @@ function useDebouncedSearch(searchQuery, prompts, filterFavorites, sortBy, sortO
       const matchesFavorite = !filterFavorites || p.favorite;
       return matchesSearch && matchesFavorite;
     });
-    
+
     // Sort the results
     filtered.sort((a, b) => {
       let comparison = 0;
@@ -54,10 +56,10 @@ function useDebouncedSearch(searchQuery, prompts, filterFavorites, sortBy, sortO
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
-    
+
     return filtered;
   }, [prompts, deferredQuery, filterFavorites, sortBy, sortOrder]);
-  
+
   return { filteredPrompts, isSearching };
 }
 
@@ -83,6 +85,7 @@ export default function DashboardPage() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Use debounced search
   const { filteredPrompts, isSearching } = useDebouncedSearch(
@@ -107,7 +110,7 @@ export default function DashboardPage() {
 
       // Update in backend
       await promptService.update(promptId, { favorite: !prompt.favorite });
-      
+
       showToast(
         prompt.favorite ? 'Removed from favorites' : 'Added to favorites',
         'success'
@@ -212,6 +215,10 @@ export default function DashboardPage() {
               <Plus className="mr-2 h-4 w-4" />
               New Prompt
             </Button>
+            <Button variant="outline" onClick={() => setShowTemplates(true)}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Templates
+            </Button>
           </div>
         </header>
 
@@ -253,7 +260,7 @@ export default function DashboardPage() {
               <option value="created_at">Created Date</option>
               <option value="title">Title</option>
             </select>
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -263,9 +270,9 @@ export default function DashboardPage() {
             >
               {sortOrder === 'asc' ? <SortAsc size={18} /> : <SortDesc size={18} />}
             </Button>
-            
+
             <div className="h-6 w-px bg-border mx-1" aria-hidden="true" />
-            
+
             <Button
               variant={filterFavorites ? "secondary" : "ghost"}
               size="icon"
@@ -276,9 +283,9 @@ export default function DashboardPage() {
             >
               <Star className={filterFavorites ? "fill-yellow-500 text-yellow-500" : ""} size={18} />
             </Button>
-            
+
             <div className="h-6 w-px bg-border mx-1" aria-hidden="true" />
-            
+
             <div role="group" aria-label="View mode">
               <Button
                 variant={viewMode === 'grid' ? "secondary" : "ghost"}
@@ -356,6 +363,12 @@ export default function DashboardPage() {
           )}
         </main>
       </div>
+
+      {/* Template Library Modal */}
+      <TemplateLibrary
+        open={showTemplates}
+        onClose={() => setShowTemplates(false)}
+      />
     </MainLayout>
   );
 }

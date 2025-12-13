@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { promptService, markdownUtils } from '@promptzy/shared';
+import { getAllTokenEstimates, formatTokenCount } from '../utils/tokenCounter';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -12,13 +13,18 @@ import {
   Maximize2,
   Minimize2,
   MoreVertical,
-  AlertTriangle
+  AlertTriangle,
+  History,
+  Link2,
+  Variable
 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { cn } from '../lib/utils';
 import PromptChainEditor from '../components/PromptChainEditor';
 import VersionHistory from '../components/VersionHistory';
+import VariableFillModal from '../components/features/VariableFillModal';
+import { hasVariables } from '../utils/variableParser';
 
 export default function EditorPage() {
   const { id } = useParams();
@@ -36,6 +42,7 @@ export default function EditorPage() {
   const [hasChanges, setHasChanges] = useState(false);
   const [showChainEditor, setShowChainEditor] = useState(false);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [showVariableModal, setShowVariableModal] = useState(false);
   const [tagInput, setTagInput] = useState('');
 
   // Warn user before leaving with unsaved changes
@@ -190,6 +197,50 @@ export default function EditorPage() {
           <Button
             variant="ghost"
             size="icon"
+            onClick={() => navigator.clipboard.writeText(content)}
+            title="Copy to clipboard"
+            aria-label="Copy prompt to clipboard"
+            disabled={!content}
+          >
+            <Copy size={18} />
+          </Button>
+          {id !== 'new' && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowVersionHistory(true)}
+                title="Version History"
+                aria-label="View version history"
+              >
+                <History size={18} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowChainEditor(true)}
+                title="Link Prompts"
+                aria-label="Link to other prompts"
+              >
+                <Link2 size={18} />
+              </Button>
+            </>
+          )}
+          {hasVariables(content) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowVariableModal(true)}
+              title="Fill Variables"
+              aria-label="Fill variable placeholders"
+              className="text-purple-500 hover:text-purple-600"
+            >
+              <Variable size={18} />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setShowPreview(!showPreview)}
             title={showPreview ? "Hide Preview" : "Show Preview"}
             aria-label={showPreview ? "Hide Preview" : "Show Preview"}
@@ -245,6 +296,10 @@ export default function EditorPage() {
             <div className="flex items-center gap-3 shrink-0">
               <span>{stats.words || 0} words</span>
               <span>{stats.characters || 0} chars</span>
+              <span className="text-muted-foreground/50">|</span>
+              <span title="GPT-4 tokens">GPT-4: ~{formatTokenCount(getAllTokenEstimates(content).gpt4)}</span>
+              <span title="Claude tokens">Claude: ~{formatTokenCount(getAllTokenEstimates(content).claude)}</span>
+              <span title="Gemini tokens">Gemini: ~{formatTokenCount(getAllTokenEstimates(content).gemini)}</span>
             </div>
           </div>
 
@@ -303,9 +358,15 @@ export default function EditorPage() {
           onRevert={() => {
             loadPrompt();
             setShowVersionHistory(false);
-          }}
-        />
+          }}        />
       )}
+
+      {/* Variable Fill Modal */}
+      <VariableFillModal
+        open={showVariableModal}
+        onClose={() => setShowVariableModal(false)}
+        content={content}
+      />
     </div>
   );
 }
